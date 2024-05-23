@@ -44,3 +44,4 @@ FastImage.go performs a GET RANGE for 12 bytes request to verify the image is fe
 ## Roadmap
 
 - [ ] Support b64 and byte array images
+- [ ] Improve test coverage
