@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 const maxBytes = 12
@@ -70,7 +72,21 @@ func (i *fastimageImpl) ValidateURL(url string, policy *Policy) (bool, []byte, *
 	}
 
 	// Check image file size
-	contentLength := resp.ContentLength
+	// Some CDNs (like google) use content-range instead of content length
+	contentLength := int64(0)
+	if resp.StatusCode == http.StatusPartialContent {
+		contentRange := resp.Header.Get("Content-Range")
+		byteRanges := strings.Split(contentRange, "/")
+		if len(contentRange) > 2 {
+			rangeLength, err := strconv.Atoi(byteRanges[1])
+			if err != nil {
+				contentLength = resp.ContentLength
+			}
+			contentLength = int64(rangeLength)
+		}
+	} else {
+		contentLength = resp.ContentLength
+	}
 	if contentLength < int64(policy.minImageFileBytesSize) {
 		return false, respBytesFirst, resp, ErrFilesizeTooSmall
 	}
